@@ -48,7 +48,7 @@ public:
         // critical section
         buffer_.push(func);
         
-        buffer_mutex.unlock();
+        locker.unlock();
         cond.notify_all();
     }
     function<void()> remove() {
@@ -104,10 +104,12 @@ public:
                 lock_guard<mutex> lock(cout_mutex);
                 cout << "consumed: " << current_produced << endl;  
             };
+            
             int execution_time = (int)time(nullptr) + (produce_limit - produced);
             buffer_->add(make_pair(execution_time, print_produced));
-            // scoped locking. unlocks on scope end
+            
             ++produced;
+            
             if (produced == produce_limit) {
               unique_lock<std::mutex> locker(status_mutex);
               producer_stopped = true;
@@ -170,7 +172,7 @@ private:
 
 int main() {
 
-    Buffer b(6);
+    Buffer b(10);
     int limit = 10;
     Producer p(&b, limit);
     Consumer c(&b, limit);
